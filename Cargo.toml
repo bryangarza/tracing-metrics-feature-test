@@ -1,0 +1,20 @@
+[package]
+name = "metric-test"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+tokio = { version = "1", features = ["full", "tracing"] }
+tokio-stream = { version = "0.1" }
+tracing = { path = "../tracing/tracing" }
+tracing-subscriber = { path = "../tracing/tracing-subscriber", features = ["env-filter"] }
+tracing-opentelemetry = { path = "../tracing/tracing-opentelemetry" }
+opentelemetry = { version = "0.17.0", features = ["rt-tokio", "metrics"] }
+opentelemetry-aws = "0.5.0"
+opentelemetry-otlp = { version = "0.10.0", features = ["tonic", "metrics"] }
+#tokio-metrics = "0.1.0"
+axum = "0.5.7"
+#console-subscriber = { path = "../console/console-subscriber" }
