@@ -3,21 +3,21 @@ use std::time::Duration;
 use opentelemetry::sdk::export::metrics::ExportKindSelector;
 use opentelemetry_otlp::WithExportConfig;
 use tracing::metric::Metric;
-use tracing::{event, metric, Level, instrument};
+use tracing::{event, instrument, metric, Level};
 use tracing_subscriber::subscribe::CollectExt;
 use tracing_subscriber::{fmt, EnvFilter, Registry};
 
 use futures_util::{Stream, StreamExt as _};
 use opentelemetry::global;
-use opentelemetry::sdk::trace as sdktrace;
 use opentelemetry::sdk::metrics::selectors;
+use opentelemetry::sdk::trace as sdktrace;
 use opentelemetry_aws::trace::XrayPropagator;
 use tracing_subscriber::{util::SubscriberInitExt, util::TryInitError};
 
 use axum::{routing::get, Router};
 
 mod metric_constants {
-    pub(crate) const GET_ROOT_REQUEST_COUNT: &'static str = "GET_ROOT_REQUEST_COUNT";
+    pub(crate) const GET_ROOT_REQUEST_COUNT: &'static str = "METRIC_GET_ROOT_REQUEST_COUNT";
 }
 
 // From opentelemetry::sdk::util::
@@ -38,7 +38,11 @@ fn delayed_interval(duration: Duration) -> impl Stream<Item = tokio::time::Insta
 async fn main() {
     let tracer = opentelemetry_otlp::new_pipeline()
         .tracing()
-        .with_exporter(opentelemetry_otlp::new_exporter().tonic().with_endpoint("http://localhost:4317"))
+        .with_exporter(
+            opentelemetry_otlp::new_exporter()
+                .tonic()
+                .with_endpoint("http://localhost:4317"),
+        )
         .with_trace_config(
             sdktrace::config()
                 .with_sampler(sdktrace::Sampler::AlwaysOn)
@@ -48,10 +52,13 @@ async fn main() {
         .install_simple()
         .expect("Unable to initialize OtlpPipeline");
 
-
     let push_controller = opentelemetry_otlp::new_pipeline()
         .metrics(tokio::spawn, delayed_interval)
-        .with_exporter(opentelemetry_otlp::new_exporter().tonic().with_endpoint("http://localhost:4317"))
+        .with_exporter(
+            opentelemetry_otlp::new_exporter()
+                .tonic()
+                .with_endpoint("http://localhost:4317"),
+        )
         .with_export_kind(ExportKindSelector::Delta)
         .with_aggregator_selector(selectors::simple::Selector::Exact)
         .with_period(Duration::from_secs(10))
@@ -59,7 +66,8 @@ async fn main() {
         .unwrap();
 
     // Create a tracing layer with the configured tracer
-    let opentelemetry = tracing_opentelemetry::subscriber().with_tracer_and_push_controller(tracer, push_controller);
+    let opentelemetry = tracing_opentelemetry::subscriber()
+        .with_tracer_and_push_controller(tracer, push_controller);
 
     let filter = EnvFilter::from_default_env().add_directive(Level::TRACE.into());
     let collector = Registry::default()
@@ -87,7 +95,11 @@ async fn main() {
 // `&'static str` becomes a `200 OK` with `content-type: text/plain; charset=utf-8`
 #[instrument]
 async fn get_root() -> &'static str {
-    metric!(Metric::new(metric_constants::GET_ROOT_REQUEST_COUNT, 1 as u64));
+    //event!(tracing::Level::INFO, metric_constants::GET_ROOT_REQUEST_COUNT = 1 as u64);
+    event!(
+        tracing::Level::INFO,
+        "METRIC_GET_ROOT_REQUEST_COUNT" = 1 as u64
+    );
     "foo"
 }
 
