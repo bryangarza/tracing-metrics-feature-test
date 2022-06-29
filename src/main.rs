@@ -2,8 +2,7 @@ use std::time::Duration;
 
 use opentelemetry::sdk::export::metrics::ExportKindSelector;
 use opentelemetry_otlp::WithExportConfig;
-use tracing::metric::Metric;
-use tracing::{event, instrument, metric, Level};
+use tracing::{info, instrument, Level, trace};
 use tracing_subscriber::subscribe::CollectExt;
 use tracing_subscriber::{fmt, EnvFilter, Registry};
 
@@ -15,10 +14,6 @@ use opentelemetry_aws::trace::XrayPropagator;
 use tracing_subscriber::{util::SubscriberInitExt, util::TryInitError};
 
 use axum::{routing::get, Router};
-
-mod metric_constants {
-    pub(crate) const GET_ROOT_REQUEST_COUNT: &'static str = "METRIC_GET_ROOT_REQUEST_COUNT";
-}
 
 // From opentelemetry::sdk::util::
 /// Helper which wraps `tokio::time::interval` and makes it return a stream
@@ -77,9 +72,8 @@ async fn main() {
 
     tracing::collect::set_global_default(collector).unwrap();
 
-    event!(tracing::Level::INFO, "BLAH");
-    event!(tracing::Level::TRACE, "BLAH2");
-    //metric!(Metric::new("METRIC_OUTSIDE_OF_ANY_SPAN", 1 as u64));
+    info!("BLAH");
+    trace!("BLAH2");
     //task_metrics().await;
 
     let app = Router::new().route("/", get(get_root));
@@ -92,58 +86,10 @@ async fn main() {
     global::shutdown_tracer_provider();
 }
 
-// `&'static str` becomes a `200 OK` with `content-type: text/plain; charset=utf-8`
 #[instrument]
 async fn get_root() -> &'static str {
-    //event!(tracing::Level::INFO, metric_constants::GET_ROOT_REQUEST_COUNT = 1 as u64);
-    event!(
-        tracing::Level::INFO,
-        "METRIC_GET_ROOT_REQUEST_COUNT" = 1 as u64
+    info!(
+        MONOTONIC_COUNTER_GET_ROOT_REQUEST_COUNT = 1 as u64
     );
     "foo"
 }
-
-// async fn task_metrics() {
-//     // construct a metrics taskmonitor
-//     let metrics_monitor = tokio_metrics::TaskMonitor::new();
-
-//     // print task metrics every 500ms
-//     {
-//         let metrics_monitor = metrics_monitor.clone();
-//         tokio::spawn(async move {
-//             for interval in metrics_monitor.intervals() {
-//                 metric!(Metric::new("INSTRUMENTED_COUNT", interval.instrumented_count));
-//                 metric!(Metric::new("DROPPED_COUNT", interval.dropped_count));
-//                 metric!(Metric::new("FIRST_POLL_COUNT", interval.first_poll_count));
-//                 //metric!(Metric::new("TOTAL_FIRST_POLL_DELAY", interval.total_first_poll_delay));
-//                 metric!(Metric::new("TOTAL_IDLED_COUNT", interval.total_idled_count));
-//                 //metric!(Metric::new("TOTAL_IDLED_DURATION", interval.total_idle_duration));
-//                 metric!(Metric::new("TOTAL_SCHEDULED_COUNT", interval.total_scheduled_count));
-//                 //metric!(Metric::new("TOTAL_SCHEDULED_DURATION", interval.total_scheduled_duration));
-//                 metric!(Metric::new("TOTAL_POLL_COUNT", interval.total_poll_count));
-//                 //metric!(Metric::new("TOTAL_POLL_DURATION", interval.total_poll_duration));
-//                 metric!(Metric::new("TOTAL_FAST_POLL_COUNT", interval.total_fast_poll_count));
-//                 //metric!(Metric::new("TOTAL_FAST_POLL_DURATION", interval.total_fast_poll_duration));
-//                 metric!(Metric::new("TOTAL_SLOW_POLL_COUNT", interval.total_slow_poll_count));
-//                 //metric!(Metric::new("TOTAL_SLOW_POLL_DURATION", interval.total_slow_poll_duration));
-//                 // wait 500ms
-//                 tokio::time::sleep(Duration::from_millis(5000)).await;
-//             }
-//         });
-//     }
-
-//     // instrument some tasks and await them
-//     // note that the same taskmonitor can be used for multiple tasks
-//     tokio::join![
-//         metrics_monitor.instrument(do_work()),
-//         metrics_monitor.instrument(do_work()),
-//         metrics_monitor.instrument(do_work())
-//     ];
-// }
-
-// async fn do_work() {
-//     for _ in 0..1000 {
-//         tokio::task::yield_now().await;
-//         tokio::time::sleep(Duration::from_millis(100)).await;
-//     }
-// }

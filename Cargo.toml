@@ -17,4 +17,5 @@ opentelemetry-aws = "0.5.0"
 opentelemetry-otlp = { version = "0.10.0", features = ["tonic", "metrics"] }
 #tokio-metrics = "0.1.0"
 axum = "0.5.7"
+# tower-http = { version = "0.3.4", features = ["trace"] }
 #console-subscriber = { path = "../console/console-subscriber" }
