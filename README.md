@@ -3,7 +3,7 @@
 ![](./screenshot.png)
 
 This project is to try out the following branch of `tracing`:
-https://github.com/bryangarza/tracing/tree/metrics-via-macro-only
+https://github.com/bryangarza/tracing/tree/opentelemetry-metrics
 
 Clone this project and my fork/branch of tracing, and `cargo run`.
 
