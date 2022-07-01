@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use opentelemetry::sdk::export::metrics::ExportKindSelector;
 use opentelemetry_otlp::WithExportConfig;
-use tracing::{info, instrument, Level, trace};
+use tracing::{info, instrument, trace, Level};
 use tracing_subscriber::subscribe::CollectExt;
 use tracing_subscriber::{fmt, EnvFilter, Registry};
 
@@ -61,13 +61,16 @@ async fn main() {
         .unwrap();
 
     // Create a tracing layer with the configured tracer
-    let opentelemetry = tracing_opentelemetry::subscriber()
-        .with_tracer_and_push_controller(tracer, push_controller);
+    let opentelemetry = tracing_opentelemetry::subscriber().with_tracer(tracer);
+
+    let opentelemetry_metrics =
+        tracing_opentelemetry::OpenTelemetryMetricsSubscriber::new(push_controller);
 
     let filter = EnvFilter::from_default_env().add_directive(Level::TRACE.into());
     let collector = Registry::default()
         .with(filter)
         .with(opentelemetry)
+        .with(opentelemetry_metrics)
         .with(fmt::Subscriber::default());
 
     tracing::collect::set_global_default(collector).unwrap();
@@ -88,8 +91,6 @@ async fn main() {
 
 #[instrument]
 async fn get_root() -> &'static str {
-    info!(
-        MONOTONIC_COUNTER_GET_ROOT_REQUEST_COUNT = 1 as u64
-    );
+    info!(MONOTONIC_COUNTER_GET_ROOT_REQUEST_COUNT = 1 as u64);
     "foo"
 }
